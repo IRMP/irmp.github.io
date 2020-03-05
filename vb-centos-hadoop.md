@@ -36,11 +36,11 @@ yum  -y  install kernel kernel-devel make gcc*
 
 挂载过程：
 
-<img src="D:\githup\irmp.github.io.git\images\image-20200305122549765.png" alt="image-20200305122549765" style="zoom:80%;" />
+<img src="https://irmp.github.io/images/image-20200305122549765.png" alt="image-20200305122549765" style="zoom:80%;" />
 
 挂载之后桌面会弹出自动运行提示，或者去/media下也可以手动安装，安装成功之后注意开启共享粘贴板等功能。
 
-<img src="D:\githup\irmp.github.io.git\images\image-20200305122840915.png" alt="image-20200305122840915" style="zoom:70%;" />
+<img src="https://irmp.github.io/images/image-20200305122840915.png" alt="image-20200305122840915" style="zoom:70%;" />
 
 我出现过安装不报错，但是功能不可用的情况，重启虚拟机，重启宿主机之后又莫名好了，建议这里不要花费太多时间，可以后面有空再回来安装。
 
@@ -90,11 +90,11 @@ LAST_CONNECT=1583377543
 
 **IPADDR** 这个需要根据VBox设置去修改，设置-》主机网络管理器，设置成和IPv4地址同一个网段就可以了
 
-<img src="D:\githup\irmp.github.io.git\images\image-20200305121458734.png" alt="image-20200305121458734" style="zoom: 80%;" />
+<img src="https://irmp.github.io/images/image-20200305121458734.png" alt="image-20200305121458734" style="zoom: 80%;" />
 
 **HWADDR**，网卡mac地址可以从虚拟机设置中获取：
 
-<img src="D:\githup\irmp.github.io.git\images\image-20200305121724193.png" alt="image-20200305121724193" style="zoom:80%;" />
+<img src="https://irmp.github.io/images/image-20200305121724193.png" alt="image-20200305121724193" style="zoom:80%;" />
 
 3.修改/etc/resolv.conf添加nameserver，没有就新建一个
 
@@ -127,7 +127,7 @@ NTPSERVERARGS=iburst
 
 ## 克隆（复制）虚拟机
 
-<img src="D:\githup\irmp.github.io.git\images\image-20200305124322293.png" alt="image-20200305124322293" style="zoom:70%;" />
+<img src="https://irmp.github.io/images/image-20200305124322293.png" alt="image-20200305124322293" style="zoom:70%;" />
 
 选择为所有网卡重新生成MAC地址，下一步选择”完全复制“结束，启动新的虚拟机。
 
@@ -135,7 +135,7 @@ NTPSERVERARGS=iburst
 
 首先，修改/etc/udev/rules.d/70-persistent-net.rules,
 
-<img src="D:\githup\irmp.github.io.git\images\image-20200305125513402.png" alt="image-20200305125513402" style="zoom: 80%;" />
+<img src="https://irmp.github.io/images/image-20200305125513402.png" alt="image-20200305125513402" style="zoom: 80%;" />
 
 上面的eth0和eth1是复制过来的，下面的是这次新增的，通过attr对照mac地址可以发现。
 
