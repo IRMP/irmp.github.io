@@ -137,7 +137,7 @@ NTPSERVERARGS=iburst
 
 <img src="https://irmp.github.io/images/image-20200305125513402.png" alt="image-20200305125513402" style="zoom: 80%;" />
 
-上面的eth0和eth1是复制过来的，下面的是这次新增的，通过attr对照mac地址可以发现。
+上面的eth0和eth1是复制过来的，下面的是这次新增的，通过attr{address}对照mac地址可以发现。
 
 我们删除复制过来的，然后留下和新生成的mac地址一致的两个网卡，然后name分别改成eth0和eth1，修改后的文件内容：
 
