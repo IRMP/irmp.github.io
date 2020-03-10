@@ -315,3 +315,125 @@ Usage: hadoop [--config confdir] [COMMAND | CLASSNAME]
 Most commands print help when invoked w/o parameters.
 ```
 
+
+
+## 运行单机版wordcount程序
+
+在hadoop目录下，新建input目录，然后新建输入文件，输入一些单词
+
+```shell
+cd /opt/module/hadoop-2.7.2
+mkdir input
+vi input/wc.input
+```
+
+执行hadoop wordcount样例程序
+
+```shell
+hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar wordcount input output
+```
+
+查看结果
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ cat output/part-r-00000 
+gaoyang	2
+huichao	1
+lihua	1
+tianyi	1
+xiaoheng	1
+xinbo	2
+yanjing	1
+zhangchen	1
+```
+
+
+
+## 伪分布式搭建
+
+### 修改配置文件
+
+- 修改etc/hadoop/core-site.xml
+
+```xml
+<configuration>
+    <!-- 指定hdfs中namenode的地址-->
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://hadoop01:9000</value>
+    </property>
+
+    <!-- 指定haoop运行时产生文件的存储目录-->
+    <property>
+        <name>hadoop.tmp.dir</name>
+        <value>/opt/module/hadoop-2.7.2/data/tmp</value>
+    </property>
+</configuration>
+```
+
+- 修改etc/hadoop/hadoop-env.sh
+
+```shell
+# The only required environment variable is JAVA_HOME.  All others are
+# optional.  When running a distributed configuration it is best to
+# set JAVA_HOME in this file, so that it is correctly defined on
+# remote nodes.
+# The java implementation to use.
+export JAVA_HOME=/opt/module/jdk1.8.0_144
+```
+
+- 修改etc/hadoop/hdfs-site.xml，副本数改成1
+
+```xml
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+</configuration>
+```
+
+### 启动集群
+
+- 格式化NameNode
+
+```shel
+hdfs namenode -format
+```
+
+- 启动NameNode
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ sbin/hadoop-daemon.sh start namenode
+starting namenode, logging to /opt/module/hadoop-2.7.2/logs/hadoop-mr-namenode-hadoop01.out
+[mr@hadoop01 hadoop-2.7.2]$ jps
+2688 Jps
+2621 NameNode
+```
+
+- 启动DataNode
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ sbin/hadoop-daemon.sh start datanode
+starting datanode, logging to /opt/module/hadoop-2.7.2/logs/hadoop-mr-datanode-hadoop01.out
+[mr@hadoop01 hadoop-2.7.2]$ jps
+2711 DataNode
+2621 NameNode
+2782 Jps
+```
+
+- 查看web管理页面
+
+http://hadoop01:50070/
+
+这里需要关闭centos防火墙或开放50070端口
+
+关闭方法：
+
+```shell
+#临时关闭
+sudo /etc/init.d/iptables stop 
+#永久关闭
+sudo chkconfig iptables off
+```
+
