@@ -192,3 +192,126 @@ NTPSERVERARGS=iburst
 ```
 
 修改完成后直接reboot，克隆完成。
+
+## 添加mr用户
+
+```shell
+useradd mr
+passwd mr
+su mr
+```
+
+sudo vi /etc/sudoers
+
+```shell
+## Allow root to run any commands anywhere
+root    ALL=(ALL)       ALL
+## add mr to sudoers
+mr    ALL=(ALL)       ALL
+```
+
+创建module和software目录，修改所属用户和组
+
+```shell
+cd /opt
+sudo mkdir module
+sudo mkdir software
+sudo chown mr@mr module/ software/
+```
+
+```shel
+[mr@hadoop01 opt]$ ll
+总用量 12
+drwxr-xr-x. 2 mr   mr   4096 3月  10 10:26 module
+drwxr-xr-x. 2 mr   mr   4096 3月  10 10:23 software
+```
+
+## 安装 jdk
+
+upload[^xshell] jdk-8u144-linux-x64.tar.gz to /opt/software/
+
+[^xshell]:https://irmp.github.io/xshell
+
+```shell
+tar -zxvf jdk-8u144-linux-x64.tar.gz -C /opt/module/
+```
+
+检查centos自带jdk，卸载之
+
+```shell
+[mr@hadoop01 jdk1.8.0_144]$ rpm -qa|grep java
+java-1.5.0-gcj-1.5.0.0-29.1.el6.x86_64
+java_cup-0.10k-5.el6.x86_64
+gcc-java-4.4.7-23.el6.x86_64
+[mr@hadoop01 jdk1.8.0_144]$ sudo yum -y remove java
+```
+
+设置环境变量
+
+```shell
+sudo vi /etc/profile
+#add below to this file
+##JAVA_HOME
+export JAVA_HOME=/opt/module/jdk1.8.0_144
+export PATH=$PATH:$JAVA_HOME/bin
+```
+
+验证
+
+```shell
+source /etc/profile
+[mr@hadoop01 jdk1.8.0_144]$ java -version
+java version "1.8.0_144"
+Java(TM) SE Runtime Environment (build 1.8.0_144-b01)
+Java HotSpot(TM) 64-Bit Server VM (build 25.144-b01, mixed mode)
+```
+
+
+
+## 安装hadoop
+
+上传hadoop-2.7.2.tar.gz到/opt/software目录，解压到module目录
+
+```shell
+tar -zxvf hadoop-2.7.2.tar.gz -C /opt/module/
+```
+
+添加环境变量
+
+```shell
+sudo vi /etc/profile
+#添加下面几行
+##HADOOP_HOME
+export HADOOP_HOME=/opt/module/hadoop-2.7.2
+export PATH=$PATH:$HADOOP_HOME/bin
+export PATH=$PATH:$HADOOP_HOME/sbin
+
+#最后source让环境变量生效
+source /etc/profile
+```
+
+验证
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ hadoop
+Usage: hadoop [--config confdir] [COMMAND | CLASSNAME]
+  CLASSNAME            run the class named CLASSNAME
+ or
+  where COMMAND is one of:
+  fs                   run a generic filesystem user client
+  version              print the version
+  jar <jar>            run a jar file
+                       note: please use "yarn jar" to launch
+                             YARN applications, not this command.
+  checknative [-a|-h]  check native hadoop and compression libraries availability
+  distcp <srcurl> <desturl> copy file or directories recursively
+  archive -archiveName NAME -p <parent path> <src>* <dest> create a hadoop archive
+  classpath            prints the class path needed to get the
+  credential           interact with credential providers
+                       Hadoop jar and the required libraries
+  daemonlog            get/set the log level for each daemon
+  trace                view and modify Hadoop tracing settings
+
+Most commands print help when invoked w/o parameters.
+```
+
