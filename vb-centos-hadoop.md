@@ -154,7 +154,7 @@ SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="08:00:27:ae:aa:6
 SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="08:00:27:9c:0e:91", ATTR{type}=="1", KERNEL=="eth*", NAME="eth1"
 ```
 
-然后eth0不用管，需要修改eth1网卡的配置,vi /etc/sysconfig/network-scripts/ifcfg-eth1
+然后需要修改eth1网卡的配置,vi /etc/sysconfig/network-scripts/ifcfg-eth1
 
 ```shell
 DEVICE=eth1
@@ -173,7 +173,7 @@ UUID=9c92fad9-6ecb-3e6c-eb4d-8a47c6f50c04
 LAST_CONNECT=1583377543
 ```
 
-然后修改hostname，vi /etc/sysconfig/network
+eth0只需要修改HWADDR，然后修改hostname，vi /etc/sysconfig/network
 
 ```shell
 NETWORKING=yes
@@ -193,7 +193,7 @@ NTPSERVERARGS=iburst
 
 修改完成后直接reboot，克隆完成。
 
-## 添加mr用户
+### 添加mr用户
 
 ```shell
 useradd mr
@@ -226,7 +226,7 @@ drwxr-xr-x. 2 mr   mr   4096 3月  10 10:26 module
 drwxr-xr-x. 2 mr   mr   4096 3月  10 10:23 software
 ```
 
-## 安装 jdk
+### 安装 jdk
 
 upload[^xshell] jdk-8u144-linux-x64.tar.gz to /opt/software/
 
@@ -268,7 +268,7 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.144-b01, mixed mode)
 
 
 
-## 安装hadoop
+### 安装hadoop
 
 上传hadoop-2.7.2.tar.gz到/opt/software目录，解压到module目录
 
@@ -426,14 +426,523 @@ starting datanode, logging to /opt/module/hadoop-2.7.2/logs/hadoop-mr-datanode-h
 
 http://hadoop01:50070/
 
+![image-20200311093619057](https://irmp.github.io/images/image-20200311093619057.png)
+
 这里需要关闭centos防火墙或开放50070端口
 
-关闭方法：
+### 防火墙操作：
 
 ```shell
-#临时关闭
-sudo /etc/init.d/iptables stop 
-#永久关闭
-sudo chkconfig iptables off
+# 查看防火墙状态
+service iptables status
+
+# 停止防火墙
+service iptables stop
+
+# 启动防火墙
+service iptables start
+
+# 重启防火墙
+service iptables restart
+
+# 永久关闭防火墙
+chkconfig iptables off
+
+# 永久关闭重启
+chkconfig iptables on
+
+#开放80端口
+vi /etc/sysconfig/iptables
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+
+#保存退出后重启防火墙
+service iptables restart
 ```
 
+### 运行伪分布式版wordcount程序
+
+- hdfs上创建输入目录
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ hdfs dfs -mkdir -p /user/mr/
+```
+
+- 上传本地输入文件
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ hdfs dfs -put input/ /user/mr/
+[mr@hadoop01 hadoop-2.7.2]$ hdfs dfs -lsr /user/mr
+lsr: DEPRECATED: Please use 'ls -R' instead.
+drwxr-xr-x   - mr supergroup          0 2020-03-11 08:46 /user/mr/input
+-rw-r--r--   1 mr supergroup         76 2020-03-11 08:46 /user/mr/input/wc.input
+```
+
+- 运行程序,查看结果
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar wordcount /user/mr/input /user/mr/output
+
+[mr@hadoop01 hadoop-2.7.2]$ hdfs dfs -cat /user/mr/output/p*
+gaoyang	2
+huichao	1
+lihua	1
+tianyi	1
+xiaoheng	1
+xinbo	2
+yanjing	1
+zhangchen	1
+```
+
+### yarn配置
+
+- 修改ect/hadoop/yarn-env.sh
+
+```shell
+# some Java parameters
+export JAVA_HOME=/opt/module/jdk1.8.0_144
+```
+
+- 修改etc/hadoop/yarn-site.xml
+
+```xml
+<configuration>
+    <!-- Site specific YARN configuration properties -->
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>hadoop01</value>
+    </property>
+</configuration>
+```
+
+- 修改etc/hadoop/mapred-env.sh
+
+```shell
+export JAVA_HOME=/opt/module/jdk1.8.0_144
+```
+
+- 修改etc/hadoop/yarn-site.xml
+
+```xml
+<!-- 指定MR运行在YARN上 -->
+<configuration>
+    <property>
+      <name>mapreduce.framework.name</name>
+      <value>yarn</value>
+    </property>
+</configuration>
+```
+
+- 启动yarn
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ sbin/yarn-daemon.sh start resourcemanager
+starting resourcemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr-resourcemanager-hadoop01.out
+[mr@hadoop01 hadoop-2.7.2]$ sbin/yarn-daemon.sh start nodemanager
+starting nodemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr-nodemanager-hadoop01.out
+[mr@hadoop01 hadoop-2.7.2]$ jps
+2711 DataNode
+4520 NodeManager
+4552 Jps
+4282 ResourceManager
+2621 NameNode
+```
+
+运行程序
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar wordcount /user/mr/input /user/mr/output
+```
+
+查看8088端口
+
+![image-20200311101146713](https://irmp.github.io/images/image-20200311101146713.png)
+
+#### 配置历史服务器
+
+1.修改etc/hadoop/mapred-site.xml
+
+```xml
+<!-- 历史服务器端地址 -->
+<property>
+	<name>mapreduce.jobhistory.address</name>
+    <value>hadoop01:10020</value>
+</property>
+<!-- 历史服务器web端地址 -->
+<property>
+	<name>mapreduce.jobhistory.webapp.address</name>
+    <value>hadoop01:19888</value>
+</property>
+```
+
+2.启动历史服务器
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ sbin/mr-jobhistory-daemon.sh start historyserver
+starting historyserver, logging to /opt/module/hadoop-2.7.2/logs/mapred-mr-historyserver-hadoop01.out
+[mr@hadoop01 hadoop-2.7.2]$ jps
+2711 DataNode
+4520 NodeManager
+4282 ResourceManager
+5101 JobHistoryServer
+2621 NameNode
+5135 Jps
+```
+
+3.查看历史
+
+![image-20200311102541499](https://irmp.github.io/images/image-20200311102541499.png)
+
+#### 配置日志聚集
+
+1.先关掉yarn相关服务
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ sbin/mr-jobhistory-daemon.sh stop historyserver
+stopping historyserver
+[mr@hadoop01 hadoop-2.7.2]$ sbin/yarn-daemon.sh stop nodemanager
+stopping nodemanager
+nodemanager did not stop gracefully after 5 seconds: killing with kill -9
+[mr@hadoop01 hadoop-2.7.2]$ sbin/yarn-daemon.sh stop resourcemanager
+stopping resourcemanager
+[mr@hadoop01 hadoop-2.7.2]$ jps
+5284 Jps
+2711 DataNode
+2621 NameNode
+```
+
+2.修改yarn-site.xml
+
+```xml
+<!-- 日志聚集功能 -->
+<property>
+	<name>yarn.log-aggregation-enable</name>
+    <value>true</value>
+</property>
+
+<!-- 日志保留时间设置 -->
+<property>
+	<name>yarn.log-aggregation.retain-seconds</name>
+    <value>604800</value>
+</property>
+```
+
+3.重新启动yarn相关服务，运行wordcount查看logs
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ sbin/yarn-daemon.sh start resourcemanager
+starting resourcemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr-resourcemanager-hadoop01.out
+[mr@hadoop01 hadoop-2.7.2]$ sbin/yarn-daemon.sh start nodemanager
+starting nodemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr-nodemanager-hadoop01.out
+[mr@hadoop01 hadoop-2.7.2]$ sbin/mr-jobhistory-daemon.sh start historyserver
+starting historyserver, logging to /opt/module/hadoop-2.7.2/logs/mapred-mr-historyserver-hadoop01.out
+[mr@hadoop01 hadoop-2.7.2]$ hdfs dfs -rm -r /user/mr/output
+20/03/11 10:41:09 INFO fs.TrashPolicyDefault: Namenode trash configuration: Deletion interval = 0 minutes, Emptier interval = 0 minutes.
+Deleted /user/mr/output
+[mr@hadoop01 hadoop-2.7.2]$ hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar wordcount /user/mr/input/ /user/mr/output
+```
+
+![image-20200311104336077](https://irmp.github.io/images/image-20200311104336077.png)
+
+**命令行查看yarn日志的方法：**
+
+```shell
+yarn logs -applicationId <applicationId>
+#mr任务可以直接把job_1583894431103_0001改成application_1583894431103_0001
+```
+
+#### 配置文件说明
+
+Hadoop配置文件分两类：默认配置文件和自定义配置文件，只有用户想修改某一默认配置值时，才需要修改自定义配置文件，更改相应属性值。
+
+（1）默认配置文件：
+
+| 要获取的默认文件     | 文件存放在Hadoop的jar包中的位置                            |
+| -------------------- | ---------------------------------------------------------- |
+| [core-default.xml]   | hadoop-common-2.7.2.jar/ core-default.xml                  |
+| [hdfs-default.xml]   | hadoop-hdfs-2.7.2.jar/ hdfs-default.xml                    |
+| [yarn-default.xml]   | hadoop-yarn-common-2.7.2.jar/ yarn-default.xml             |
+| [mapred-default.xml] | hadoop-mapreduce-client-core-2.7.2.jar/ mapred-default.xml |
+
+​	（2）自定义配置文件：
+
+​	**core-site.xml**、**hdfs-site.xml**、**yarn-site.xml**、**mapred-site.xml**四个配置文件存放在$HADOOP_HOME/etc/hadoop这个路径上，用户可以根据项目需求重新进行修改配置。
+
+## 完全分布式集群搭建
+
+### 创建集群分发脚本
+
+在/home/mr目录下创建bin目录，并在bin目录下xsync创建文件，文件内容如下
+
+```shell
+#!/bin/bash
+#1 获取输入参数个数，如果没有参数，直接退出
+pcount=$#
+if((pcount==0)); then
+echo no args;
+exit;
+fi
+
+#2 获取文件名称
+p1=$1
+fname=`basename $p1`
+echo fname=$fname
+
+#3 获取上级目录到绝对路径
+pdir=`cd -P $(dirname $p1); pwd`
+echo pdir=$pdir
+
+#4 获取当前用户名称
+user=`whoami`
+
+#5 循环
+for((host=1; host<4; host++)); do
+        echo ------------------- hadoop$host --------------
+        rsync -rvl $pdir/$fname $user@hadoop0$host:$pdir
+done
+```
+
+调用脚本形式：xsync 文件名称
+
+该脚本会将文件和目录同步到其他节点
+
+### 集群部署规划
+
+|      | hadoop01          | hadoop02                    | hadoop03                   |
+| ---- | ----------------- | --------------------------- | :------------------------- |
+| HDFS | NameNode DataNode | DataNode                    | SecondaryNameNode DataNode |
+| YARN | NodeManager       | ResourceManager NodeManager | NodeManager                |
+
+### 配置文件
+
+此处不基于前面的伪分布式，重新给出所有需要修改的文件内容，
+
+进入hadoop01中的/opt/module/hadoop-2.7.2/etc/hadoop目录，
+
+**hdfs-site.xml** 副本数改回3，增加SecondaryNameNode配置
+
+```xml
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>3</value>
+    </property>
+    <!-- 指定Hadoop辅助名称节点主机配置 -->
+    <property>
+          <name>dfs.namenode.secondary.http-address</name>
+          <value>hadoop03:50090</value>
+    </property>
+</configuration>
+```
+
+**yarn-site.xml** 修改resourcemanager地址
+
+```xml
+<configuration>
+	<!-- Site specific YARN configuration properties -->
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+        </property>
+    <property>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>hadoop02</value>
+    </property>
+    <!-- 日志聚集功能 -->
+    <property>
+        <name>yarn.log-aggregation-enable</name>
+        <value>true</value>
+    </property>
+    <!-- 日志保留时间设置 -->
+    <property>
+        <name>yarn.log-aggregation.retain-seconds</name>
+        <value>604800</value>
+    </property>
+</configuration>
+```
+
+**mapred-site.xml** 较伪分布式没有改动
+
+```xml
+<configuration>
+    <!-- 指定MR运行在Yarn上 -->
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+    <!-- 历史服务器端地址 -->
+    <property>
+        <name>mapreduce.jobhistory.address</name>
+        <value>hadoop01:10020</value>
+    </property>
+    <!-- 历史服务器web端地址 -->
+    <property>
+        <name>mapreduce.jobhistory.webapp.address</name>
+        <value>hadoop01:19888</value>
+    </property>
+</configuration>
+```
+
+**hadoop-env.sh yarn-env.sh mapred-env.sh**
+
+```shell
+export JAVA_HOME=/opt/module/jdk1.8.0_144
+```
+
+- 分发文件
+
+```shell
+[mr@hadoop01 etc]$ xsync hadoop
+fname=hadoop
+pdir=/opt/module/hadoop-2.7.2/etc
+------------------- hadoop2 --------------
+mr@hadoop02's password: 
+sending incremental file list
+hadoop/core-site.xml
+hadoop/hadoop-env.sh
+hadoop/hdfs-site.xml
+hadoop/mapred-env.sh
+hadoop/mapred-site.xml
+hadoop/yarn-env.sh
+hadoop/yarn-site.xml
+
+sent 5658 bytes  received 272 bytes  1317.78 bytes/sec
+total size is 79040  speedup is 13.33
+------------------- hadoop3 --------------
+mr@hadoop03's password: 
+sending incremental file list
+hadoop/hdfs-site.xml
+hadoop/yarn-site.xml
+
+sent 1723 bytes  received 75 bytes  1198.67 bytes/sec
+total size is 79040  speedup is 43.96
+```
+
+- 格式化namenode（第一次启动需要）
+
+格式化之前需要先停止hdfs服务，删除hadoop目录下的data和logs目录
+
+```shell
+[mr@hadoop01 module]$ rm -rf data/ logs/
+[mr@hadoop01 module]$ hdfs namenode -format
+```
+
+### 配置SSH免密登陆
+
+hadoop01(NameNode)需要配置mr和root用户的免密登陆
+
+```shell
+[mr@hadoop01 .ssh]$ cd 
+[mr@hadoop01 ~]$ cd .ssh/
+[mr@hadoop01 .ssh]$ ssh-keygen -t rsa
+#分发公钥
+ssh-copy-id hadoop01
+ssh-copy-id hadoop02
+ssh-copy-id hadoop03
+#切换root用户再来一遍
+```
+
+hadoop02(ResourceManager) 需要配置mr用户免密登陆，操作同上
+
+### 启动集群
+
+修改slaves文件，注意不要有空格和空行，最后同步到其他节点
+
+```shell
+[mr@hadoop01 hadoop]$ pwd
+/opt/module/hadoop-2.7.2/etc/hadoop
+[mr@hadoop01 hadoop]$ cat slaves 
+hadoop01
+hadoop02
+hadoop03
+[mr@hadoop01 hadoop]$ xsync slaves
+fname=slaves
+pdir=/opt/module/hadoop-2.7.2/etc/hadoop
+------------------- hadoop2 --------------
+sending incremental file list
+slaves
+
+sent 99 bytes  received 37 bytes  272.00 bytes/sec
+total size is 27  speedup is 0.20
+------------------- hadoop3 --------------
+sending incremental file list
+slaves
+
+sent 99 bytes  received 37 bytes  90.67 bytes/sec
+total size is 27  speedup is 0.20
+```
+
+启动hdfs，在hadoop01（namenode）上通过start-dfs.sh启动
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ pwd
+/opt/module/hadoop-2.7.2
+[mr@hadoop01 hadoop-2.7.2]$ jps
+2599 Jps
+[mr@hadoop01 hadoop-2.7.2]$ sbin/start-dfs.sh
+Starting namenodes on [hadoop01]
+hadoop01: starting namenode, logging to /opt/module/hadoop-2.7.2/logs/hadoop-mr-namenode-hadoop01.out
+hadoop03: starting datanode, logging to /opt/module/hadoop-2.7.2/logs/hadoop-mr-datanode-hadoop03.out
+hadoop02: starting datanode, logging to /opt/module/hadoop-2.7.2/logs/hadoop-mr-datanode-hadoop02.out
+hadoop01: starting datanode, logging to /opt/module/hadoop-2.7.2/logs/hadoop-mr-datanode-hadoop01.out
+Starting secondary namenodes [hadoop03]
+hadoop03: starting secondarynamenode, logging to /opt/module/hadoop-2.7.2/logs/hadoop-mr-secondarynamenode-hadoop03.out
+```
+
+启动yarn，在hadoop02（ResourceManager）上通过start-yarn.sh启动
+
+```shell
+[mr@hadoop02 hadoop-2.7.2]$ sbin/start-yarn.sh
+starting yarn daemons
+starting resourcemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr-resourcemanager-hadoop02.out
+hadoop02: starting nodemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr-nodemanager-hadoop02.out
+hadoop01: starting nodemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr-nodemanager-hadoop01.out
+hadoop03: starting nodemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr-nodemanager-hadoop03.out
+```
+
+最后jps查看各节点服务是否正常：
+
+```shell
+[mr@hadoop01 hadoop-2.7.2]$ jps
+3090 NodeManager
+3187 Jps
+2717 NameNode
+2830 DataNode
+
+[mr@hadoop02 hadoop-2.7.2]$ jps
+2528 DataNode
+2645 ResourceManager
+2778 Jps
+2749 NodeManager
+
+[mr@hadoop03 hadoop-2.7.2]$ jps
+2498 DataNode
+2787 Jps
+2596 SecondaryNameNode
+2686 NodeManager
+```
+
+### 集群启动停止方式总结
+
+1.	各个服务组件逐一启动/停止
+
+​	（1）分别启动/停止HDFS组件
+
+​		hadoop-daemon.sh  start / stop  namenode / datanode / secondarynamenode
+
+​	（2）启动/停止YARN
+
+​		yarn-daemon.sh  start / stop  resourcemanager / nodemanager
+
+2.	各个模块分开启动/停止（配置ssh是前提）常用
+
+​	（1）整体启动/停止HDFS
+
+​		start-dfs.sh  /  stop-dfs.sh
+
+​	（2）整体启动/停止YARN
+
+​		start-yarn.sh  /  stop-yarn.sh
