@@ -930,7 +930,7 @@ hadoop03: starting nodemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr
 - 各个服务组件逐一启动/停止
 
 | 操作              | 命令                                                         |
-| ----------------- | ------------------------------------------------------------ |
+| :---------------- | ------------------------------------------------------------ |
 | 启动/停止HDFS组件 | hadoop-daemon.sh  start / stop  namenode / datanode / secondarynamenode |
 | 启动/停止YARN     | yarn-daemon.sh  start / stop  resourcemanager / nodemanager  |
 - 各个模块分开启动/停止（配置ssh是前提）常用
