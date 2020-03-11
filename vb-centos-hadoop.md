@@ -927,22 +927,26 @@ hadoop03: starting nodemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr
 
 ### 集群启动停止方式总结
 
-1.	各个服务组件逐一启动/停止
+#### 各个服务组件逐一启动/停止
 
-​	（1）分别启动/停止HDFS组件
+- 分别启动/停止HDFS组件
+
 
 ​		hadoop-daemon.sh  start / stop  namenode / datanode / secondarynamenode
 
-​	（2）启动/停止YARN
+- 启动/停止YARN
+
 
 ​		yarn-daemon.sh  start / stop  resourcemanager / nodemanager
 
-2.	各个模块分开启动/停止（配置ssh是前提）常用
+#### 各个模块分开启动/停止（配置ssh是前提）常用
 
-​	（1）整体启动/停止HDFS
+- 整体启动/停止HDFS
+
 
 ​		start-dfs.sh  /  stop-dfs.sh
 
-​	（2）整体启动/停止YARN
+- 整体启动/停止YARN
+
 
 ​		start-yarn.sh  /  stop-yarn.sh
