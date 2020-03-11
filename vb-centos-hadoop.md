@@ -933,10 +933,9 @@ hadoop03: starting nodemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr
 | ----------------- | ------------------------------------------------------------ |
 | 启动/停止HDFS组件 | hadoop-daemon.sh  start / stop  namenode / datanode / secondarynamenode |
 | 启动/停止YARN     | yarn-daemon.sh  start / stop  resourcemanager / nodemanager  |
-
 - 各个模块分开启动/停止（配置ssh是前提）常用
 
-| 操作              | 命令                           |
-| ----------------- | ------------------------------ |
-| 整体启动/停止HDFS | start-dfs.sh  /  stop-dfs.sh   |
-| 整体启动/停止YARN | start-yarn.sh  /  stop-yarn.sh |
+| 操作              | 命令                          |
+| ----------------- | ----------------------------- |
+| 整体启动/停止HDFS | start-dfs.sh  /  stop-dfs.sh  |
+| 整体启动/停止YARN | start-yarn.sh  /  stop-yarn.s |
