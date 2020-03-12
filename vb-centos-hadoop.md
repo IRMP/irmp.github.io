@@ -930,7 +930,7 @@ hadoop03: starting nodemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr
 - 各个服务组件逐一启动/停止
 
 | 操作              | 命令                                                         |
-| :---------------- | ------------------------------------------------------------ |
+| :---------------- | :----------------------------------------------------------- |
 | 启动/停止HDFS组件 | hadoop-daemon.sh  start / stop  namenode / datanode / secondarynamenode |
 | 启动/停止YARN     | yarn-daemon.sh  start / stop  resourcemanager / nodemanager  |
 - 各个模块分开启动/停止（配置ssh是前提）常用
@@ -939,3 +939,71 @@ hadoop03: starting nodemanager, logging to /opt/module/hadoop-2.7.2/logs/yarn-mr
 | ----------------- | ----------------------------- |
 | 整体启动/停止HDFS | start-dfs.sh  /  stop-dfs.sh  |
 | 整体启动/停止YARN | start-yarn.sh  /  stop-yarn.s |
+
+### 集群时间同步
+
+时间同步的方式：用hadoop01作为时间服务器，所有的机器与这台集群时间进行定时的同步，比如，每隔十分钟，同步一次时间。以下所有操作需要root权限
+
+**检查ntp服务是否安装**
+
+```shell
+[root@hadoop01 hadoop-2.7.2]# rpm -qa | grep ntp
+fontpackages-filesystem-1.41-1.1.el6.noarch
+ntp-4.2.6p5-15.el6.centos.x86_64
+ntpdate-4.2.6p5-15.el6.centos.x86_64
+```
+
+**修改ntp配置文件**
+
+```shell
+# Hosts on local network are less restricted.
+#这里解注释，根据自己的网段设置ip
+restrict 192.168.56.0 mask 255.255.255.0 nomodify notrap
+
+#这里注释掉
+#server 0.centos.pool.ntp.org iburst
+#server 1.centos.pool.ntp.org iburst
+#server 2.centos.pool.ntp.org iburst
+#server 3.centos.pool.ntp.org iburst
+#添加两行，集群在局域网中，不使用其他互联网上的时间
+server 127.127.1.0
+fudge 127.127.1.0 stratum 10
+```
+
+**修改/etc/sysconfig/ntpd**，让硬件时间与系统时间一起同步，添加如下内容
+
+```shell
+SYNC_HWCLOCK=yes
+```
+
+**重新启动ntpd服务**
+
+```shell
+service ntpd restart
+```
+
+**开机启动ntpd服务**
+
+```shell
+chkconfig ntpd on
+```
+
+**其他机器设置十分钟同步一次**
+
+```shell
+[root@hadoop02 hadoop-2.7.2]# crontab -e
+#添加如下内容
+*/10 * * * * /usr/sbin/ntpdate hadoop01
+```
+
+**修改任意机器时间，查看10分钟后是否同步**
+
+```shell
+[root@hadoop02 hadoop-2.7.2]# date -s "2018-11-11 11:11:11"
+2018年 11月 11日 星期日 11:11:11 CST
+[root@hadoop02 hadoop-2.7.2]# date
+2018年 11月 11日 星期日 11:11:12 CST
+[mr@hadoop02 hadoop-2.7.2]$ date
+2020年 03月 12日 星期四 10:02:10 CST
+```
+
