@@ -4,7 +4,7 @@
 
 ### 安装lrzsz工具
 
-```shel
+```shell
 yum -y install lrzsz
 
 rpm -qa|grep lrzsz #查看是否安装成功
