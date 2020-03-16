@@ -27,7 +27,7 @@ windows里配置HADOOP_HOME环境变量，添加%HADOOP_HOME%\bin到PATH中
 如果java安装在Program Files目录里需要改变JAVA_HOME，保证没有空格，改成C:\Progra~1\Java\jdk1.8.0_231即可
 IDEA如果一直运行报找不到winutils的错误，清缓存重启几次即可
 log4j配置
-```xml
+```properties
 log4j.rootLogger=INFO, stdout
 log4j.appender.stdout=org.apache.log4j.ConsoleAppender
 log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
