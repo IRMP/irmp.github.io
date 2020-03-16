@@ -22,3 +22,18 @@ hdfs dfs -setrep 副本数 文件或目录
 
 如果设置的副本数大于datanode的个数，新增datanode后会自动同步数据过去。
 
+## 客户端配置
+windows里配置HADOOP_HOME环境变量，添加%HADOOP_HOME%\bin到PATH中
+如果java安装在Program Files目录里需要改变JAVA_HOME，保证没有空格，改成C:\Progra~1\Java\jdk1.8.0_231即可
+IDEA如果一直运行报找不到winutils的错误，清缓存重启几次即可
+log4j配置
+```xml
+log4j.rootLogger=INFO, stdout
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d %p [%c] - %m%n
+log4j.appender.logfile=org.apache.log4j.FileAppender
+log4j.appender.logfile.File=target/spring.log
+log4j.appender.logfile.layout=org.apache.log4j.PatternLayout
+log4j.appender.logfile.layout.ConversionPattern=%d %p [%c] - %m%n
+```
