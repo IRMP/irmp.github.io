@@ -193,6 +193,48 @@ NTPSERVERARGS=iburst
 
 修改完成后直接reboot，克隆完成。
 
+### 网络配置（增加）
+
+场景：一台主机可以连接另一台主机里的虚拟机，并且虚拟机可以上网，同样双网卡设置，一个NAT不变，另一个改为桥接，网卡配置如下：
+
+```shell
+DEVICE=eth1
+
+TYPE=Ethernet
+
+UUID=c31b74b5-3bdc-4077-9a49-4fcc6c1a30c0
+
+ONBOOT=yes
+
+NM_CONTROLLED=yes
+
+BOOTPROTO=static
+
+DEFROUTE=yes
+
+IPV4_FAILURE_FATAL=yes
+
+IPV6INIT=no
+
+NAME="System eth1"
+
+HWADDR=08:00:27:18:b1:00
+
+PEERDNS=yes
+
+PEERROUTES=yes
+
+LAST_CONNECT=1583335310
+
+IPADDR=设置成和主机一个网段
+
+GATEWAY=主机网关
+
+NETMASK=主机子网掩码
+```
+
+
+
 ### 添加mr用户
 
 ```shell
