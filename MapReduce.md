@@ -124,6 +124,7 @@ job.setInputFormatClass(NLineInputFormat.class);
 1. 自定义一个类继承FileInputFormat
 
 ```java
+
 package com.vic.mapreduce.inputformat;
 
 import org.apache.hadoop.fs.Path;
