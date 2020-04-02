@@ -13,6 +13,7 @@ minsize：参数调的比blocksize大，则会让切片变大
 使用combineTextInputformat代替默认的TextInputformat对小文件进行合并
 ## hadoop的序列化
 java的序列化（Serializble)过于重量，hadoop自己实现了一套序列化（Writeble）
+
 ```java
 package com.vic.mapreduce.flowsum;
 
@@ -105,12 +106,14 @@ public class FlowBean implements Writable {
 ```
 
 ## KeyValueTextInputFormat
+
 ```java
 job.setInputFormatClass(KeyValueTextInputFormat.class);
 conf.set(KeyValueLineRecordReader.KEY_VALUE_SEPERATOR, " ");//默认是\t
 ```
 
 ## NLineInputFormat
+
 ```java
 //mapper keyIn LongWritable
 NLineInputFormat.setNumLinesPerSplit(job,3);//3行一切分
@@ -119,6 +122,7 @@ job.setInputFormatClass(NLineInputFormat.class);
 
 ## 自定义InputFormat
 1. 自定义一个类继承FileInputFormat
+
 ```java
 package com.vic.mapreduce.inputformat;
 
@@ -170,6 +174,7 @@ public class WholeFileInputFormat extends FileInputFormat<Text, BytesWritable> {
 }
 ```
 2. 改写RecordReader
+
 ```java
 package com.vic.mapreduce.inputformat;
 
@@ -292,6 +297,7 @@ public class WholeRecordReader extends RecordReader<Text, BytesWritable> {
 ## partition 分区
 ### 默认的分区机制 hash
 根据key的hashcode对reducetask个数取模得到，用户只能控制分几个区，无法控制哪个key分到哪个区
+
 ```java
 /** Partition keys by their {@link Object#hashCode()}. */
 @InterfaceAudience.Public
@@ -306,8 +312,11 @@ public class HashPartitioner<K, V> extends Partitioner<K, V> {
 
 }
 ```
+
 ### 自定义分区
+
 1. 继承Partitioner类
+
 ```java
 package com.vic.mapreduce.flowsum;
 
@@ -348,13 +357,16 @@ public class MyPhonePartitioner extends Partitioner<Text, FlowBean> {
     }
 }
 ```
+
 2. driver类中增加配置：
+
 ```java
 //设置自定义分区
 job.setPartitionerClass(MyPhonePartitioner.class);
 //如果不设置reduceTaskNum，默认为1
 job.setNumReduceTasks(5);
 ```
+
 这里要注意numreducetask的设置
 - 如果reducetask设置为1，那结果就是1个分区
 - 如果1 < numreducetask < getpartition的分区数，则一部分数据没处放，抛出IO异常（Illeagal partition for XXX)
