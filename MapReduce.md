@@ -287,5 +287,76 @@ public class WholeRecordReader extends RecordReader<Text, BytesWritable> {
 ![截屏2020-04-02下午7.41.26](https://irmp.github.io/images/mr2.png)
 
 
-
 ### reduce要等待所有maptask结束之后开始，不会出现map没到100%，而reduce不是0%的情况
+
+## partition 分区
+### 默认的分区机制 hash
+根据key的hashcode对reducetask个数取模得到，用户只能控制分几个区，无法控制哪个key分到哪个区
+```java
+/** Partition keys by their {@link Object#hashCode()}. */
+@InterfaceAudience.Public
+@InterfaceStability.Stable
+public class HashPartitioner<K, V> extends Partitioner<K, V> {
+
+  /** Use {@link Object#hashCode()} to partition. */
+  public int getPartition(K key, V value,
+                          int numReduceTasks) {
+    return (key.hashCode() & Integer.MAX_VALUE) % numReduceTasks;
+  }
+
+}
+```
+### 自定义分区
+1. 继承Partitioner类
+```java
+package com.vic.mapreduce.flowsum;
+
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Partitioner;
+
+public class MyPhonePartitioner extends Partitioner<Text, FlowBean> {
+
+    /**
+     * Get the partition number for a given key (hence record) given the total
+     * number of partitions i.e. number of reduce-tasks for the job.
+     *
+     * <p>Typically a hash function on a all or a subset of the key.</p>
+     *
+     * @param k          the key to be partioned.
+     * @param v         the entry value.
+     * @param numPartitions the total number of partitions.
+     * @return the partition number for the <code>key</code>.
+     */
+    @Override
+    public int getPartition(Text k, FlowBean v, int numPartitions) {
+        if (k.toString().length() < 3) {
+            return 4;
+        }
+        String partStr = k.toString().substring(0, 3);
+        switch (partStr) {
+            case "136":
+                return 0;
+            case "137":
+                return 1;
+            case "138":
+                return 2;
+            case "139":
+                return 3;
+            default:
+                return 4;
+        }
+    }
+}
+```
+2. driver类中增加配置：
+```java
+//设置自定义分区
+job.setPartitionerClass(MyPhonePartitioner.class);
+//如果不设置reduceTaskNum，默认为1
+job.setNumReduceTasks(5);
+```
+这里要注意numreducetask的设置
+- 如果reducetask设置为1，那结果就是1个分区
+- 如果1 < numreducetask < getpartition的分区数，则一部分数据没处放，抛出IO异常（Illeagal partition for XXX)
+- 如果NumReduceTask > getpartition的分区数，则会生成一些空文件
+- 分区号必须从0开始
