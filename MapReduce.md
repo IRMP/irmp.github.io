@@ -314,8 +314,6 @@ ReduceTask的并行度同样影响整个Job的执行并发度和执行效率，�
 job.setNumReduceTasks(4);
 ```
 
-### reduce要等待所有maptask结束之后开始，不会出现map没到100%，而reduce不是0%的情况
-
 ## partition 分区
 ### 默认的分区机制 hash
 根据key的hashcode对reducetask个数取模得到，用户只能控制分几个区，无法控制哪个key分到哪个区
@@ -486,3 +484,68 @@ protected void setup(Mapper<LongWritable, Text, Text, NullWritable>.Context cont
     BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(path), "UTF-8"));
 }
 ```
+## 压缩和解压缩
+```java
+/**
+     * 压缩
+     * @param fileName
+     * @param code
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    private static void compress(String fileName, String code) throws IOException, ClassNotFoundException {
+        FileInputStream fis = new FileInputStream(new File(fileName));
+        Class clazz = Class.forName(code);
+        CompressionCodec codec = (CompressionCodec) ReflectionUtils.newInstance(clazz, new Configuration());
+        FileOutputStream fos = new FileOutputStream(new File(fileName + codec.getDefaultExtension()));
+        CompressionOutputStream cos = codec.createOutputStream(fos);
+        IOUtils.copyBytes(fis, cos, 1024 * 1024 * 5, false);
+        IOUtils.closeStream(cos);
+        IOUtils.closeStream(fos);
+        IOUtils.closeStream(fis);
+    }
+
+    /**
+     * 解压缩
+     * @param fileName
+     * @throws IOException
+     */
+    private static void deCompress(String fileName) throws IOException {
+        CompressionCodecFactory codecFactory = new CompressionCodecFactory(new Configuration());
+        CompressionCodec codec = codecFactory.getCodec(new Path(fileName));
+        if (codec == null) {
+            return;
+        }
+        CompressionInputStream cis = codec.createInputStream(new FileInputStream(new File(fileName)));
+        FileOutputStream fos = new FileOutputStream(new File(fileName + ".decoded"));
+        IOUtils.copyBytes(cis, fos, 1024 * 1024 * 5, false);
+        cis.close();
+        fos.close();
+    }
+```
+
+### map输出端压缩
+```java
+// 开启map端输出压缩
+configuration.setBoolean("mapreduce.map.output.compress", true);
+    // 设置map端输出压缩方式
+configuration.setClass("mapreduce.map.output.compress.codec", BZip2Codec.class, CompressionCodec.class);
+```
+
+### reduce输出端压缩
+```java
+// 设置reduce端输出压缩开启
+FileOutputFormat.setCompressOutput(job, true);
+
+// 设置压缩的方式
+FileOutputFormat.setOutputCompressorClass(job, BZip2Codec.class); 
+```
+
+### topN
+
+### 给出每个用户和他们的粉丝列表，寻找所有拥有共同粉丝的两个用户，和他们共同的粉丝
+解决办法，两次mr
+- 第一次map把用户和粉丝列表，拆分成<粉丝，被关注的用户>键值对
+- 第一次reduce把<粉丝，被关注的用户>键值对合并成<粉丝，被关注的用户集合>
+- 第二次map把<粉丝，被关注的用户集合>拆分成<用户A-用户B，某共同粉丝>键值对
+- 第二次reduce把<用户A-用户B，某共同粉丝>合并成<用户A-用户B，共同粉丝集合>
