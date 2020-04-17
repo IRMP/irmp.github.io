@@ -139,4 +139,4 @@ flush和major compact
 
 ## hbase的master挂了，可以正常读写，但不能建表
 
-## hbase的region split 自动切分会造成数据热点问题
+## hbase的region split 自动切分会造成数据热点问题，解决办法-预分区
