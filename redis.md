@@ -46,3 +46,9 @@ sinter k1 k2
 sunion k1 k2 
 sdiff k1 k2 # k1中有，k2里没有的元素
 ```
+
+# hset
+```shell script
+hset user:1001 name zhangsan age 30
+hget user:1001 name
+```
